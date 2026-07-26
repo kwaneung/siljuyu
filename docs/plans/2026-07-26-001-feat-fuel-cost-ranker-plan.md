@@ -175,7 +175,7 @@ flowchart TB
 
 ### Dependencies / Assumptions
 
-- 앱은 Next.js 애플리케이션으로 구현하고 Vercel에 배포한다.
+- 앱은 최신 Next.js(App Router) + TypeScript + Tailwind v4로 구현하고 Vercel에 배포한다. 패키지 매니저는 pnpm, 모션은 `motion`, 단위 테스트는 Vitest.
 - 오피넷 Open API `aroundAll.do` / `detailById.do`로 주변 주유소·상세를 조회한다. 반경 파라미터 최대 5000m.
 - 브라우저 Geolocation을 우선하고, 실패·거절 시 수동 입력 좌표/주소로 기준 위치를 정한다.
 - 길안내는 외부 지도 딥링크만 사용한다(앱 내 지도 없음).
