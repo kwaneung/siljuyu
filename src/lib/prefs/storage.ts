@@ -65,14 +65,17 @@ export function normalizePrefs(value: unknown): UserPrefs {
 
 function storage(): Storage | null {
   if (typeof window === "undefined") return null;
-  return window.localStorage ?? null;
+  try {
+    return window.localStorage ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export function loadPrefs(): UserPrefs {
-  const store = storage();
-  if (!store) return { onboardingDone: false };
-
   try {
+    const store = storage();
+    if (!store) return { onboardingDone: false };
     const raw = store.getItem(PREFS_KEY);
     return raw ? normalizePrefs(JSON.parse(raw)) : { onboardingDone: false };
   } catch {
@@ -82,9 +85,11 @@ export function loadPrefs(): UserPrefs {
 
 export function savePrefs(prefs: UserPrefs): UserPrefs {
   const normalized = normalizePrefs(prefs);
-  const store = storage();
-  if (store) {
-    store.setItem(PREFS_KEY, JSON.stringify(normalized));
+  try {
+    const store = storage();
+    store?.setItem(PREFS_KEY, JSON.stringify(normalized));
+  } catch {
+    // Private mode / quota / blocked storage — keep in-memory prefs usable.
   }
   return normalized;
 }

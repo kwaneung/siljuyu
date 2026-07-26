@@ -71,4 +71,32 @@ describe("prefs storage", () => {
       ),
     ).toBe(false);
   });
+
+  it("survives blocked localStorage without throwing", () => {
+    const original = window.localStorage;
+    Object.defineProperty(window, "localStorage", {
+      configurable: true,
+      get() {
+        throw new DOMException("Blocked", "SecurityError");
+      },
+    });
+
+    expect(() => loadPrefs()).not.toThrow();
+    expect(loadPrefs()).toEqual({ onboardingDone: false });
+    expect(() =>
+      savePrefs({
+        onboardingDone: true,
+        efficiencyKmPerL: 12,
+        fuelType: "B027",
+        fillLiters: 40,
+        radiusKm: 3,
+        lastOrigin: { lat: 37.5, lng: 127 },
+      }),
+    ).not.toThrow();
+
+    Object.defineProperty(window, "localStorage", {
+      configurable: true,
+      value: original,
+    });
+  });
 });
