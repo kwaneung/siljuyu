@@ -189,7 +189,10 @@ flowchart TB
 
 ### Key Technical Decisions
 
-- **KTD1. Next.js App Router + TypeScript + Tailwind on Vercel.** `(session-settled: user-directed — Next + Vercel)` App Router, Route Handlers for server-side Opinet/geocode. Tailwind + CSS variables for brand tokens. No UI component library required for v1.
+- **KTD1. Latest Next.js App Router stack on Vercel.** `(session-settled: user-directed — Next + Vercel; versions/tooling user-approved as agent-chosen best practice)` Scaffold with **current latest** at implement time (research snapshot 2026-07-26: `next@16.x`, `react@19.x`, `typescript@latest`, `tailwindcss@4.x`). App Router + Route Handlers for Opinet/geocode. Tailwind v4 + CSS variables for brand tokens. No UI component library for v1. Prefer `create-next-app` defaults compatible with that stack, then add Vitest/`motion`.
+- **KTD1b. Package manager: pnpm.** Use **pnpm** (Corepack-enabled) with committed `pnpm-lock.yaml`. Scripts and Verification Contract use `pnpm …` only. Chosen over npm/yarn for strict lockfile + efficient node_modules on Vercel.
+- **KTD1c. Unit tests: Vitest (latest).** Domain/mapper/prefs tests via Vitest latest at implement time (snapshot: `vitest@4.x`).
+- **KTD1d. Motion: `motion` (latest).** Use the **`motion`** package (Framer Motion 계열 최신 패키지명) for list enter, #1 highlight, detail transition. Keep motions intentional (2–3), not decorative noise.
 - **KTD2. Server-only Opinet proxy.** `OPINET_API_KEY` lives in Vercel/server env only. Client calls `app/api/stations/route.ts` (and detail) with WGS84 lat/lng + prodcd + radiusKm; server converts to KATEC, calls `aroundAll.do`, maps JSON, never returns the key.
 - **KTD3. WGS84 ↔ KATEC conversion in server module.** Opinet requires KATEC `x`/`y`. Implement a tested converter (proj4 or well-known Korea TM/KATEC constants) in `src/lib/geo/katec.ts`. Client stays on WGS84.
 - **KTD4. Total-cost pure domain module.** `src/lib/cost/totalCost.ts` owns the formula and sort/tiebreak. Distance from Opinet is meters → km. Tiebreak: lower total cost, then shorter distance, then lower liter price, then `UNI_ID`.
@@ -199,7 +202,7 @@ flowchart TB
 - **KTD8. List presentation.** Fetch all stations in radius (`sort=2` distance from Opinet is fine; we re-sort by total cost). Show ranked list capped at **30** rows for UI. Detail loads `detailById.do` for address when opened.
 - **KTD9. Vehicle presets as static data.** `src/data/vehiclePresets.ts` — ~10 popular KR models (차종+유종+공인연비). Values are curated placeholders from public 공인/복합 연비; document source comment. User can always override efficiency.
 - **KTD10. Fuel type codes.** UI: 휘발유 `B027`, 경유 `D047`, 고급휘발유 `B034`, LPG `K015`. Default onboarding starts unset until user picks (or preset fills).
-- **KTD11. Visual system.** Distinct non-default type (e.g. Geist/Syne + IBM Plex Sans or similar via `next/font`), atmospheric gradient/pattern background, full-bleed mobile hero on first paint of rank view, 2–3 intentional motions (list enter, #1 highlight, detail transition). No purple-on-white / cream-terracotta / broadsheet clichés. Cards only where interaction needs a container.
+- **KTD11. Visual system.** Distinct non-default type via `next/font` (avoid Inter/Roboto/Arial/system as the hero face), atmospheric gradient/pattern background, full-bleed mobile hero on first paint of rank view. Motions via **KTD1d**. No purple-on-white / cream-terracotta / broadsheet clichés. Cards only where interaction needs a container.
 
 ### High-Level Technical Design
 
@@ -274,15 +277,16 @@ flowchart LR
 
 ### U1. Next.js app scaffold and design tokens
 
-- **Goal:** Create the Next.js (App Router) TypeScript app with Tailwind, fonts, CSS variables, and base mobile layout shell.
+- **Goal:** Create the Next.js (App Router) TypeScript app with Tailwind v4, fonts, CSS variables, pnpm lockfile, and base mobile layout shell.
 - **Requirements:** R11
-- **Files:** `package.json`, `next.config.ts`, `tsconfig.json`, `app/layout.tsx`, `app/globals.css`, `app/page.tsx`, `README.md` (stub ok until U10)
-- **Approach:** `create-next-app` style App Router + Tailwind. Define color/type/motion CSS variables. Root layout mobile viewport meta. Placeholder home that will redirect per prefs in U5.
+- **Files:** `package.json`, `pnpm-lock.yaml`, `packageManager` field, `next.config.ts`, `tsconfig.json`, `app/layout.tsx`, `app/globals.css`, `app/page.tsx`, `vitest.config.ts`, `README.md` (stub ok until U10)
+- **Approach:** Scaffold with **pnpm** + latest Next/React/TS/Tailwind (KTD1/KTD1b). Add `motion` and Vitest. Set `"packageManager": "pnpm@…"` for Corepack. Define color/type CSS variables. Root layout mobile viewport meta. Placeholder home that will redirect per prefs in U5.
 - **Dependencies:** none
 - **Test scenarios:**
-  - App builds (`next build`) successfully.
+  - App builds (`pnpm build`) successfully.
   - Root layout renders without runtime error.
-- **Verification:** `pnpm build` (or npm/yarn as chosen in scaffold) succeeds.
+  - Lockfile present; no npm/yarn lockfiles committed.
+- **Verification:** `pnpm build` succeeds.
 
 ### U2. Domain: fuel types, cost math, presets, geo helpers
 
@@ -377,14 +381,15 @@ flowchart LR
 
 ### U9. Visual polish and motion pass
 
-- **Goal:** Dribbble-level mobile composition: atmosphere, type, 2–3 motions, brand-forward rank hero.
+- **Goal:** Dribbble-level mobile composition: atmosphere, type, 2–3 motions via `motion`, brand-forward rank hero.
 - **Requirements:** R11
-- **Files:** `app/globals.css`, rank/onboarding/detail components from U5–U7
-- **Approach:** One composition first viewport on rank (brand + one headline + CTA/controls + dominant atmosphere — not a dashboard). No hero overlays/badges. Intentional motion only. Pass Lighthouse-ish sanity: no layout explode on 390px width.
+- **Files:** `app/globals.css`, rank/onboarding/detail components from U5–U7, small `src/components/motion/*` wrappers if needed
+- **Approach:** One composition first viewport on rank (brand + one headline + CTA/controls + dominant atmosphere — not a dashboard). No hero overlays/badges. Use **`motion`** for list enter, #1 highlight, detail transition only. Prefer `prefers-reduced-motion` safe defaults. No layout explode on 390px width.
 - **Dependencies:** U5, U6, U7
 - **Test scenarios:**
-  - Smoke: onboarding and rank render at mobile viewport without horizontal scroll (Playwright or manual checklist in U10).
-- **Verification:** visual checklist in Definition of Done; optional Playwright screenshot later.
+  - Smoke: onboarding and rank render at mobile viewport without horizontal scroll (manual checklist in U10).
+  - Reduced-motion: animations disable or simplify when the media query prefers reduced motion.
+- **Verification:** visual checklist in Definition of Done.
 
 ### U10. Env, README, Vercel deploy readiness
 
@@ -404,7 +409,7 @@ flowchart LR
 
 | Gate | Command / check | Applies |
 |---|---|---|
-| Unit tests | `pnpm test` (Vitest) | U2, U3 mapper, U4, deep links |
+| Unit tests | `pnpm test` (Vitest latest) | U2, U3 mapper, U4, deep links |
 | Typecheck/build | `pnpm build` | all units |
 | Lint | `pnpm lint` | all units |
 | Manual / preview smoke | Onboarding → rank → detail → external map; geo denied → manual lat/lng | U5–U10 |
@@ -420,4 +425,5 @@ Behavioral skill evaluation: not required (no agent/tools surface).
 - `artifact` prefs persist across reload; first visit onboarding gate works.
 - Vercel-deployable with env vars documented.
 - Abandoned experiment code removed from the diff before ship.
+- Tooling pins honored: pnpm + lockfile, latest Next/React/TS/Tailwind/Vitest/`motion` at install time, no competing package-manager lockfiles.
 - Ready for `lfg` / `ce-work` execution without unresolved blocking questions.
