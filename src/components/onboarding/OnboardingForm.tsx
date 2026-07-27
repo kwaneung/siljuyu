@@ -93,17 +93,10 @@ export function OnboardingForm() {
         </header>
 
         <section className="glass rounded-[32px] p-5">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-bold">1. 현재 위치</h2>
-              <p className="text-sm text-[var(--ink-muted)]">
-                기준 위치는 기기 GPS만 사용해요.
-              </p>
-            </div>
-            <button type="button" className="secondary-cta" onClick={geo.requestLocation}>
-              다시 가져오기
-            </button>
-          </div>
+          <h2 className="text-lg font-bold">1. 현재 위치</h2>
+          <p className="mt-1 text-sm text-[var(--ink-muted)]">
+            기준 위치는 기기 GPS만 사용해요.
+          </p>
           {geo.status === "idle" || geo.status === "requesting" ? (
             <p className="mt-3 text-sm text-[var(--brand)]">현재 위치를 확인하고 있어요...</p>
           ) : null}
@@ -115,6 +108,13 @@ export function OnboardingForm() {
           {"message" in geo && geo.message ? (
             <p className="mt-3 text-sm text-[var(--spark)]">{geo.message}</p>
           ) : null}
+          <button
+            type="button"
+            className="secondary-cta mt-4 w-full whitespace-nowrap"
+            onClick={geo.requestLocation}
+          >
+            위치 새로고침
+          </button>
         </section>
 
         <section className="glass rounded-[32px] p-5">

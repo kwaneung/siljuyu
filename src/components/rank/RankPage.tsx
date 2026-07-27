@@ -119,7 +119,11 @@ export function RankPage() {
         </p>
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          <button type="button" className="secondary-cta" onClick={geo.requestLocation}>
+          <button
+            type="button"
+            className="secondary-cta whitespace-nowrap"
+            onClick={geo.requestLocation}
+          >
             현재 위치 새로고침
           </button>
           {"message" in geo && geo.message ? (
