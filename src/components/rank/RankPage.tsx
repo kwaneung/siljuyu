@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { FUEL_TYPES, FUEL_TYPE_CODES, type FuelType } from "@/lib/fuel/types";
 import { formatWon, rankStations } from "@/lib/cost/totalCost";
@@ -22,6 +22,18 @@ export function RankPage() {
   const geo = useGeolocation();
   const [prefs, setPrefs] = useState<UserPrefs | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selectedPanelRef = useRef<HTMLDivElement>(null);
+
+  function selectStation(id: string) {
+    setSelectedId(id);
+    requestAnimationFrame(() => {
+      selectedPanelRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+      selectedPanelRef.current?.focus({ preventScroll: true });
+    });
+  }
 
   useEffect(() => {
     const loaded = loadPrefs();
@@ -127,19 +139,26 @@ export function RankPage() {
           ) : null}
         </div>
 
-        {stationsState.status === "loading" || geo.status === "requesting" ? (
-          <section className="glass mt-8 rounded-[36px] p-5">
-            <p className="text-[var(--ink-muted)]">가격을 가져오는 중이에요...</p>
-          </section>
-        ) : (
-          <SelectedStationPanel
-            station={selected}
-            fuelType={prefs.fuelType}
-            fillLiters={prefs.fillLiters}
-            efficiencyKmPerL={prefs.efficiencyKmPerL}
-            rankLabel={selectedRank > 0 ? `#${selectedRank} 상세` : "선택 주유소"}
-          />
-        )}
+        <div
+          ref={selectedPanelRef}
+          id="selected-station-panel"
+          tabIndex={-1}
+          className="scroll-mt-4 outline-none"
+        >
+          {stationsState.status === "loading" || geo.status === "requesting" ? (
+            <section className="glass mt-8 rounded-[36px] p-5">
+              <p className="text-[var(--ink-muted)]">가격을 가져오는 중이에요...</p>
+            </section>
+          ) : (
+            <SelectedStationPanel
+              station={selected}
+              fuelType={prefs.fuelType}
+              fillLiters={prefs.fillLiters}
+              efficiencyKmPerL={prefs.efficiencyKmPerL}
+              rankLabel={selectedRank > 0 ? `#${selectedRank} 상세` : "선택 주유소"}
+            />
+          )}
+        </div>
 
         <section className="mt-5 grid grid-cols-2 gap-2">
           <label className="text-sm text-[var(--ink-muted)]">
@@ -224,7 +243,7 @@ export function RankPage() {
               >
                 <button
                   type="button"
-                  onClick={() => setSelectedId(station.id)}
+                  onClick={() => selectStation(station.id)}
                   className={`w-full rounded-[28px] border p-4 text-left ${
                     isSelected
                       ? "border-[var(--brand)] bg-[rgba(141,249,111,0.12)]"
