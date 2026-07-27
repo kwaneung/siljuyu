@@ -17,6 +17,7 @@ const body = Gowun_Dodum({
 export const metadata: Metadata = {
   title: "siljuyu | 총비용 주유소 랭킹",
   description: "주유 가격과 편도 이동 연료비를 합쳐 진짜 싼 주유소를 찾습니다.",
+  applicationName: "siljuyu",
 };
 
 export const viewport: Viewport = {
