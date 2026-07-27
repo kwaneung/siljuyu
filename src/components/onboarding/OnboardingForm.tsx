@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { VEHICLE_PRESETS } from "@/data/vehiclePresets";
@@ -25,18 +25,15 @@ export function OnboardingForm() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const selectedPreset = useMemo(
-    () => VEHICLE_PRESETS.find((preset) => preset.id === vehiclePresetId),
-    [vehiclePresetId],
-  );
-
-  function selectPreset(id: string) {
+  function applyPreset(id: string) {
     const preset = VEHICLE_PRESETS.find((item) => item.id === id);
-    setVehiclePresetId(id);
-    if (preset) {
-      setFuelType(preset.fuelType);
-      setEfficiency(String(preset.officialKmPerL));
+    if (!preset) {
+      setVehiclePresetId(undefined);
+      return;
     }
+    setVehiclePresetId(id);
+    setFuelType(preset.fuelType);
+    setEfficiency(String(preset.officialKmPerL));
   }
 
   function complete() {
@@ -88,7 +85,7 @@ export function OnboardingForm() {
             첫 주유 랭킹을 만들 기준을 잡아요
           </h1>
           <p className="mt-4 text-[var(--ink-muted)]">
-            현재 위치와 차량 조건을 한 번만 저장하면 다음부터 바로 순위를 보여줘요.
+            현재 위치와 유종·연비를 한 번만 저장하면 다음부터 바로 순위를 보여줘요.
           </p>
         </header>
 
@@ -118,34 +115,47 @@ export function OnboardingForm() {
         </section>
 
         <section className="glass rounded-[32px] p-5">
-          <h2 className="text-lg font-bold">2. 차량과 유종</h2>
-          <div className="mt-4 grid gap-2">
-            {VEHICLE_PRESETS.map((preset) => (
-              <button
-                key={preset.id}
-                type="button"
-                onClick={() => selectPreset(preset.id)}
-                className={`rounded-2xl border p-3 text-left ${
-                  selectedPreset?.id === preset.id
-                    ? "border-[var(--brand)] bg-[rgba(141,249,111,0.12)]"
-                    : "border-[var(--line)] bg-white/[0.05]"
-                }`}
-              >
-                <strong>{preset.model}</strong>
-                <span className="block text-sm text-[var(--ink-muted)]">
-                  {FUEL_TYPES[preset.fuelType].label} · 공인연비 {preset.officialKmPerL}km/L
-                </span>
-              </button>
-            ))}
-          </div>
+          <h2 className="text-lg font-bold">2. 유종과 연비</h2>
+          <p className="mt-1 text-sm text-[var(--ink-muted)]">
+            랭킹은 유종과 연비로 계산해요. 차량 프리셋은 선택하면 값을 채워 줍니다.
+          </p>
 
-          <div className="mt-5 grid grid-cols-2 gap-2">
+          <label className="mt-4 block text-sm text-[var(--ink-muted)]" htmlFor="vehicle-preset">
+            차량 프리셋 (선택)
+          </label>
+          <select
+            id="vehicle-preset"
+            className="field mt-2"
+            value={vehiclePresetId ?? ""}
+            onChange={(event) => {
+              const nextId = event.target.value;
+              if (!nextId) {
+                setVehiclePresetId(undefined);
+                return;
+              }
+              applyPreset(nextId);
+            }}
+          >
+            <option value="">직접 입력</option>
+            {VEHICLE_PRESETS.map((preset) => (
+              <option key={preset.id} value={preset.id}>
+                {preset.model} · {FUEL_TYPES[preset.fuelType].label} ·{" "}
+                {preset.officialKmPerL}km/L
+              </option>
+            ))}
+          </select>
+
+          <p className="mt-5 text-sm text-[var(--ink-muted)]">유종</p>
+          <div className="mt-2 grid grid-cols-2 gap-2">
             {FUEL_TYPE_CODES.map((code) => (
               <button
                 type="button"
                 key={code}
                 className={`pill ${fuelType === code ? "pill-active" : ""}`}
-                onClick={() => setFuelType(code)}
+                onClick={() => {
+                  setFuelType(code);
+                  setVehiclePresetId(undefined);
+                }}
               >
                 {FUEL_TYPES[code].label}
               </button>
@@ -153,14 +163,17 @@ export function OnboardingForm() {
           </div>
 
           <label className="mt-4 block text-sm text-[var(--ink-muted)]" htmlFor="efficiency">
-            계산용 연비 (실연비로 수정 가능)
+            연비 km/L
           </label>
           <input
             id="efficiency"
             className="field mt-2"
             inputMode="decimal"
             value={efficiency}
-            onChange={(event) => setEfficiency(event.target.value)}
+            onChange={(event) => {
+              setEfficiency(event.target.value);
+              setVehiclePresetId(undefined);
+            }}
             placeholder="예: 11.2"
           />
         </section>
