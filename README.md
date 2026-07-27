@@ -72,4 +72,5 @@ Do not create a `NEXT_PUBLIC_` variant for the key.
 4. Change efficiency/fill liters and confirm rank order updates without changing
    radius.
 5. Change radius between `3km` and `5km` and confirm data refetches.
-6. Open a station detail and confirm cost breakdown plus external map links.
+6. Select a ranked station and confirm the top panel shows fuel type, 원/L,
+   cost breakdown, and external map links (no separate detail page).

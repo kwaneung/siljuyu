@@ -15,30 +15,13 @@ import {
 } from "@/lib/prefs/storage";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useStations } from "@/hooks/useStations";
-
-function detailHref(station: {
-  id: string;
-  name: string;
-  pricePerL: number;
-  distanceM: number;
-  wgs84?: { lat: number; lng: number };
-}) {
-  const params = new URLSearchParams({
-    name: station.name,
-    pricePerL: String(station.pricePerL),
-    distanceM: String(station.distanceM),
-  });
-  if (station.wgs84) {
-    params.set("lat", String(station.wgs84.lat));
-    params.set("lng", String(station.wgs84.lng));
-  }
-  return `/station/${encodeURIComponent(station.id)}?${params.toString()}`;
-}
+import { SelectedStationPanel } from "@/components/station/SelectedStationPanel";
 
 export function RankPage() {
   const router = useRouter();
   const geo = useGeolocation();
   const [prefs, setPrefs] = useState<UserPrefs | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
     const loaded = loadPrefs();
@@ -78,6 +61,18 @@ export function RankPage() {
     }).slice(0, 30);
   }, [stationsState.stations, prefs?.efficiencyKmPerL, prefs?.fillLiters]);
 
+  useEffect(() => {
+    if (ranked.length === 0) {
+      setSelectedId(null);
+      return;
+    }
+    setSelectedId((current) =>
+      current && ranked.some((station) => station.id === current)
+        ? current
+        : ranked[0].id,
+    );
+  }, [ranked]);
+
   if (!prefs) {
     return (
       <main className="app-shell flex items-center justify-center">
@@ -86,7 +81,11 @@ export function RankPage() {
     );
   }
 
-  const top = ranked[0];
+  const selected =
+    ranked.find((station) => station.id === selectedId) ?? ranked[0] ?? null;
+  const selectedRank = selected
+    ? ranked.findIndex((station) => station.id === selected.id) + 1
+    : 0;
   const locationLabel =
     geo.status === "granted"
       ? "현재 위치"
@@ -100,7 +99,7 @@ export function RankPage() {
         initial={{ opacity: 0, y: 22 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.55, ease: "easeOut" }}
-        className="min-h-[86vh] pt-7"
+        className="pt-7"
       >
         <div className="flex items-center justify-between">
           <p className="text-sm uppercase tracking-[0.35em] text-[var(--brand)]">siljuyu</p>
@@ -116,6 +115,7 @@ export function RankPage() {
         </h1>
         <p className="mt-5 max-w-[24rem] text-[var(--ink-muted)]">
           {locationLabel} 기준 {prefs.radiusKm}km 안 주유소를 이동 연료비까지 더해 줄 세웠어요.
+          아래에서 고르면 상단에 상세와 길찾기가 열려요.
         </p>
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -127,31 +127,19 @@ export function RankPage() {
           ) : null}
         </div>
 
-        <motion.section
-          animate={top ? { scale: [1, 1.015, 1] } : undefined}
-          transition={{ duration: 2.6, repeat: top ? Infinity : 0, ease: "easeInOut" }}
-          className="glass mt-8 rounded-[36px] p-5"
-        >
-          <p className="text-sm text-[var(--brand)]">현재 1등</p>
-          {top ? (
-            <>
-              <h2 className="mt-2 text-3xl font-black">{top.name}</h2>
-              <p className="mt-2 text-5xl font-black text-[var(--brand)]">
-                {formatWon(top.costs.totalCost)}
-              </p>
-              <p className="mt-3 text-sm text-[var(--ink-muted)]">
-                이동 {formatWon(top.costs.travelCost)} + 주유{" "}
-                {formatWon(top.costs.fillCost)} · {Math.round(top.distanceM)}m
-              </p>
-            </>
-          ) : (
-            <p className="mt-4 text-[var(--ink-muted)]">
-              {stationsState.status === "loading" || geo.status === "requesting"
-                ? "가격을 가져오는 중이에요..."
-                : "현재 위치를 허용하거나 조건을 조정해 주세요."}
-            </p>
-          )}
-        </motion.section>
+        {stationsState.status === "loading" || geo.status === "requesting" ? (
+          <section className="glass mt-8 rounded-[36px] p-5">
+            <p className="text-[var(--ink-muted)]">가격을 가져오는 중이에요...</p>
+          </section>
+        ) : (
+          <SelectedStationPanel
+            station={selected}
+            fuelType={prefs.fuelType}
+            fillLiters={prefs.fillLiters}
+            efficiencyKmPerL={prefs.efficiencyKmPerL}
+            rankLabel={selectedRank > 0 ? `#${selectedRank} 상세` : "선택 주유소"}
+          />
+        )}
 
         <section className="mt-5 grid grid-cols-2 gap-2">
           <label className="text-sm text-[var(--ink-muted)]">
@@ -225,37 +213,45 @@ export function RankPage() {
         )}
 
         <div className="space-y-3">
-          {ranked.map((station, index) => (
-            <motion.div
-              key={station.id}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: Math.min(index * 0.035, 0.35), duration: 0.35 }}
-            >
-              <Link
-                href={detailHref(station)}
-                className="block rounded-[28px] border border-[var(--line)] bg-white/[0.06] p-4"
+          {ranked.map((station, index) => {
+            const isSelected = station.id === selected?.id;
+            return (
+              <motion.div
+                key={station.id}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: Math.min(index * 0.035, 0.35), duration: 0.35 }}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm text-[var(--brand)]">#{index + 1}</p>
-                    <h3 className="mt-1 text-lg font-black">{station.name}</h3>
-                    <p className="mt-1 text-sm text-[var(--ink-muted)]">
-                      {station.pricePerL.toLocaleString("ko-KR")}원/L ·{" "}
-                      {(station.distanceM / 1000).toFixed(1)}km
-                    </p>
+                <button
+                  type="button"
+                  onClick={() => setSelectedId(station.id)}
+                  className={`w-full rounded-[28px] border p-4 text-left ${
+                    isSelected
+                      ? "border-[var(--brand)] bg-[rgba(141,249,111,0.12)]"
+                      : "border-[var(--line)] bg-white/[0.06]"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm text-[var(--brand)]">#{index + 1}</p>
+                      <h3 className="mt-1 text-lg font-black">{station.name}</h3>
+                      <p className="mt-1 text-sm text-[var(--ink-muted)]">
+                        {station.pricePerL.toLocaleString("ko-KR")}원/L ·{" "}
+                        {(station.distanceM / 1000).toFixed(1)}km
+                      </p>
+                    </div>
+                    <strong className="text-right text-xl text-[var(--brand)]">
+                      {formatWon(station.costs.totalCost)}
+                    </strong>
                   </div>
-                  <strong className="text-right text-xl text-[var(--brand)]">
-                    {formatWon(station.costs.totalCost)}
-                  </strong>
-                </div>
-                <p className="mt-3 text-xs text-[var(--ink-muted)]">
-                  이동 {formatWon(station.costs.travelCost)} + 주유{" "}
-                  {formatWon(station.costs.fillCost)}
-                </p>
-              </Link>
-            </motion.div>
-          ))}
+                  <p className="mt-3 text-xs text-[var(--ink-muted)]">
+                    이동 {formatWon(station.costs.travelCost)} + 주유{" "}
+                    {formatWon(station.costs.fillCost)}
+                  </p>
+                </button>
+              </motion.div>
+            );
+          })}
         </div>
       </section>
     </main>
