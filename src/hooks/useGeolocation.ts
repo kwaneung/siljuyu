@@ -16,7 +16,7 @@ export function useGeolocation() {
     if (!("geolocation" in navigator)) {
       setState({
         status: "unsupported",
-        message: "이 브라우저에서는 현재 위치를 바로 가져올 수 없어요.",
+        message: "이 브라우저에서는 현재 위치를 사용할 수 없어요.",
       });
       return;
     }
@@ -38,8 +38,8 @@ export function useGeolocation() {
           status: error.code === error.PERMISSION_DENIED ? "denied" : "error",
           message:
             error.code === error.PERMISSION_DENIED
-              ? "위치 권한이 거절됐어요. 주소나 좌표로 계속할 수 있어요."
-              : "위치를 가져오지 못했어요. 잠시 후 다시 시도하거나 수동 입력을 사용하세요.",
+              ? "위치 권한이 필요해요. 브라우저 설정에서 위치를 허용한 뒤 다시 시도해 주세요."
+              : "현재 위치를 가져오지 못했어요. 잠시 후 다시 시도해 주세요.",
         });
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },

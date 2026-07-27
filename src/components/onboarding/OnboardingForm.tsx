@@ -1,12 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { VEHICLE_PRESETS } from "@/data/vehiclePresets";
 import { FUEL_TYPES, FUEL_TYPE_CODES, type FuelType } from "@/lib/fuel/types";
-import { savePrefs, type Origin, type RadiusKm } from "@/lib/prefs/storage";
-import { ManualLocation } from "@/components/location/ManualLocation";
+import { savePrefs, type RadiusKm } from "@/lib/prefs/storage";
 import { useGeolocation } from "@/hooks/useGeolocation";
 
 const FILL_PRESETS = [20, 40, 60];
@@ -14,13 +13,17 @@ const FILL_PRESETS = [20, 40, 60];
 export function OnboardingForm() {
   const router = useRouter();
   const geo = useGeolocation();
-  const [origin, setOrigin] = useState<Origin | null>(null);
   const [vehiclePresetId, setVehiclePresetId] = useState<string | undefined>();
   const [fuelType, setFuelType] = useState<FuelType | undefined>();
   const [efficiency, setEfficiency] = useState("");
   const [fillLiters, setFillLiters] = useState("");
   const [radiusKm, setRadiusKm] = useState<RadiusKm | undefined>();
   const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    geo.requestLocation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const selectedPreset = useMemo(
     () => VEHICLE_PRESETS.find((preset) => preset.id === vehiclePresetId),
@@ -36,18 +39,16 @@ export function OnboardingForm() {
     }
   }
 
-  function useGrantedLocation() {
-    if (geo.status === "granted") {
-      setOrigin(geo.origin);
-    }
-  }
-
   function complete() {
     const parsedEfficiency = Number(efficiency);
     const parsedFill = Number(fillLiters);
 
+    if (geo.status !== "granted") {
+      setMessage("현재 위치 권한이 필요해요. 위치를 허용한 뒤 다시 시도해 주세요.");
+      return;
+    }
+
     if (
-      !origin ||
       !Number.isFinite(parsedEfficiency) ||
       parsedEfficiency <= 0 ||
       !fuelType ||
@@ -55,7 +56,7 @@ export function OnboardingForm() {
       parsedFill <= 0 ||
       !radiusKm
     ) {
-      setMessage("위치, 유종, 연비, 주유량, 반경을 모두 확정해 주세요.");
+      setMessage("유종, 연비, 주유량, 반경을 모두 확정해 주세요.");
       return;
     }
 
@@ -65,7 +66,7 @@ export function OnboardingForm() {
       fuelType,
       fillLiters: parsedFill,
       radiusKm,
-      lastOrigin: origin,
+      lastOrigin: geo.origin,
       vehiclePresetId,
     });
     router.push("/");
@@ -94,41 +95,26 @@ export function OnboardingForm() {
         <section className="glass rounded-[32px] p-5">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-bold">1. 기준 위치</h2>
+              <h2 className="text-lg font-bold">1. 현재 위치</h2>
               <p className="text-sm text-[var(--ink-muted)]">
-                위치 권한을 먼저 시도하고, 실패하면 직접 입력하세요.
+                기준 위치는 기기 GPS만 사용해요.
               </p>
             </div>
             <button type="button" className="secondary-cta" onClick={geo.requestLocation}>
-              현재 위치
+              다시 가져오기
             </button>
           </div>
-          {geo.status === "requesting" && (
-            <p className="mt-3 text-sm text-[var(--brand)]">GPS를 확인하고 있어요...</p>
-          )}
+          {geo.status === "idle" || geo.status === "requesting" ? (
+            <p className="mt-3 text-sm text-[var(--brand)]">현재 위치를 확인하고 있어요...</p>
+          ) : null}
           {geo.status === "granted" && (
-            <div className="mt-3 rounded-2xl bg-[rgba(141,249,111,0.12)] p-3">
-              <p className="text-sm text-[var(--brand)]">
-                현재 위치 감지 완료: {geo.origin.lat.toFixed(5)},{" "}
-                {geo.origin.lng.toFixed(5)}
-              </p>
-              <button type="button" className="mt-2 text-sm underline" onClick={useGrantedLocation}>
-                이 위치 사용
-              </button>
-            </div>
-          )}
-          {"message" in geo && geo.message && (
-            <p className="mt-3 text-sm text-[var(--spark)]">{geo.message}</p>
-          )}
-          <div className="mt-5">
-            <ManualLocation onSelect={setOrigin} compact />
-          </div>
-          {origin && (
-            <p className="mt-3 text-sm text-[var(--brand)]">
-              선택 위치: {origin.label ?? "기준점"} ({origin.lat.toFixed(4)},{" "}
-              {origin.lng.toFixed(4)})
+            <p className="mt-3 rounded-2xl bg-[rgba(141,249,111,0.12)] p-3 text-sm text-[var(--brand)]">
+              현재 위치 준비 완료
             </p>
           )}
+          {"message" in geo && geo.message ? (
+            <p className="mt-3 text-sm text-[var(--spark)]">{geo.message}</p>
+          ) : null}
         </section>
 
         <section className="glass rounded-[32px] p-5">

@@ -10,11 +10,9 @@ import {
   isOnboardingComplete,
   loadPrefs,
   savePrefs,
-  type Origin,
   type RadiusKm,
   type UserPrefs,
 } from "@/lib/prefs/storage";
-import { ManualLocation } from "@/components/location/ManualLocation";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useStations } from "@/hooks/useStations";
 
@@ -41,7 +39,6 @@ export function RankPage() {
   const router = useRouter();
   const geo = useGeolocation();
   const [prefs, setPrefs] = useState<UserPrefs | null>(null);
-  const [manualOpen, setManualOpen] = useState(false);
 
   useEffect(() => {
     const loaded = loadPrefs();
@@ -63,8 +60,7 @@ export function RankPage() {
   function updatePrefs(patch: Partial<UserPrefs>) {
     setPrefs((current) => {
       if (!current) return current;
-      const next = savePrefs({ ...current, ...patch });
-      return next;
+      return savePrefs({ ...current, ...patch });
     });
   }
 
@@ -91,6 +87,12 @@ export function RankPage() {
   }
 
   const top = ranked[0];
+  const locationLabel =
+    geo.status === "granted"
+      ? "현재 위치"
+      : geo.status === "requesting"
+        ? "위치 확인 중"
+        : (prefs.lastOrigin?.label ?? "저장된 위치");
 
   return (
     <main className="app-shell space-y-6">
@@ -113,9 +115,17 @@ export function RankPage() {
           도착까지 싼 곳
         </h1>
         <p className="mt-5 max-w-[24rem] text-[var(--ink-muted)]">
-          {prefs.lastOrigin?.label ?? "기준 위치"}에서 {prefs.radiusKm}km 안의 주유소를
-          이동 연료비까지 더해 줄 세웠어요.
+          {locationLabel} 기준 {prefs.radiusKm}km 안 주유소를 이동 연료비까지 더해 줄 세웠어요.
         </p>
+
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <button type="button" className="secondary-cta" onClick={geo.requestLocation}>
+            현재 위치 새로고침
+          </button>
+          {"message" in geo && geo.message ? (
+            <p className="text-sm text-[var(--spark)]">{geo.message}</p>
+          ) : null}
+        </div>
 
         <motion.section
           animate={top ? { scale: [1, 1.015, 1] } : undefined}
@@ -136,9 +146,9 @@ export function RankPage() {
             </>
           ) : (
             <p className="mt-4 text-[var(--ink-muted)]">
-              {stationsState.status === "loading"
+              {stationsState.status === "loading" || geo.status === "requesting"
                 ? "가격을 가져오는 중이에요..."
-                : "조건을 조정하거나 위치를 확인해 주세요."}
+                : "현재 위치를 허용하거나 조건을 조정해 주세요."}
             </p>
           )}
         </motion.section>
@@ -193,25 +203,6 @@ export function RankPage() {
             </button>
           ))}
         </section>
-
-        <button
-          type="button"
-          className="secondary-cta mt-4 w-full"
-          onClick={() => setManualOpen((value) => !value)}
-        >
-          기준 위치 직접 바꾸기
-        </button>
-        {manualOpen && (
-          <div className="glass mt-3 rounded-[28px] p-4">
-            <ManualLocation
-              compact
-              onSelect={(origin: Origin) => {
-                updatePrefs({ lastOrigin: origin });
-                setManualOpen(false);
-              }}
-            />
-          </div>
-        )}
       </motion.header>
 
       <section className="space-y-3 pb-8">

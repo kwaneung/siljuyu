@@ -31,12 +31,6 @@ Required for live station prices:
 - `OPINET_API_KEY` — Opinet Open API key. Register/check API docs at:
   https://www.opinet.co.kr/user/custapi/openApiInfoDtl.do?apiId=3
 
-Optional:
-
-- `KAKAO_REST_API_KEY` — Kakao Local REST key for address search. If missing,
-  `/api/geocode` returns `503 KAKAO_KEY_MISSING` and the UI still supports manual
-  latitude/longitude input.
-
 If `OPINET_API_KEY` is missing, `/api/stations` and `/api/stations/[id]` return
 `503 OPINET_KEY_MISSING`. The app still builds and tests without any secrets.
 
@@ -52,8 +46,7 @@ pnpm build
 ## Product behavior
 
 - First visit requires onboarding before ranking.
-- Browser geolocation is tried first; denied/failed location can continue via
-  address search or manual lat/lng.
+- Origin is **browser geolocation only** for v1. Address search may come later.
 - Preferences are stored only in `localStorage` under `siljuyu.prefs.v1`.
 - Radius is intentionally limited to `3km` or `5km`; Opinet `aroundAll.do`
   accepts a maximum radius of `5000m`.
@@ -62,20 +55,19 @@ pnpm build
 
 ## Vercel readiness
 
-Set these project environment variables:
+Set this project environment variable:
 
 ```text
 OPINET_API_KEY=<server-only Opinet key>
-KAKAO_REST_API_KEY=<optional Kakao REST key>
 ```
 
-Do not create `NEXT_PUBLIC_` variants for either key.
+Do not create a `NEXT_PUBLIC_` variant for the key.
 
 ## Smoke checklist
 
 1. Open `/` with no saved prefs and confirm onboarding is required.
-2. Deny geolocation, enter coordinates manually, select a vehicle preset, edit
-   efficiency, pick fill liters and `3km` or `5km`.
+2. Allow geolocation, select a vehicle preset, edit efficiency, pick fill liters
+   and `3km` or `5km`.
 3. Confirm `/` shows a ranked list or a clear API/key/empty state.
 4. Change efficiency/fill liters and confirm rank order updates without changing
    radius.
