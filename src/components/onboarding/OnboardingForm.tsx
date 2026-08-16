@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { VEHICLE_PRESETS } from "@/data/vehiclePresets";
 import { FUEL_TYPES, FUEL_TYPE_CODES, type FuelType } from "@/lib/fuel/types";
-import { savePrefs, type RadiusKm } from "@/lib/prefs/storage";
+import { resolveWorkingOrigin } from "@/lib/geo/origin";
+import { savePrefs, type Origin, type RadiusKm } from "@/lib/prefs/storage";
 import { useGeolocation } from "@/hooks/useGeolocation";
+import { ManualLocation } from "@/components/location/ManualLocation";
 
 const FILL_PRESETS = [20, 40, 60];
 
@@ -18,6 +20,7 @@ export function OnboardingForm() {
   const [efficiency, setEfficiency] = useState("");
   const [fillLiters, setFillLiters] = useState("");
   const [radiusKm, setRadiusKm] = useState<RadiusKm | undefined>();
+  const [manualOrigin, setManualOrigin] = useState<Origin | undefined>();
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -40,8 +43,14 @@ export function OnboardingForm() {
     const parsedEfficiency = Number(efficiency);
     const parsedFill = Number(fillLiters);
 
-    if (geo.status !== "granted") {
-      setMessage("현재 위치 권한이 필요해요. 위치를 허용한 뒤 다시 시도해 주세요.");
+    const origin = resolveWorkingOrigin({
+      geoStatus: geo.status,
+      geoOrigin: geo.origin,
+      manualOrigin,
+    });
+
+    if (!origin) {
+      setMessage("현재 위치를 허용하거나 주소를 검색해 주세요.");
       return;
     }
 
@@ -63,7 +72,7 @@ export function OnboardingForm() {
       fuelType,
       fillLiters: parsedFill,
       radiusKm,
-      lastOrigin: geo.origin,
+      lastOrigin: origin,
       vehiclePresetId,
     });
     router.push("/");
@@ -85,14 +94,14 @@ export function OnboardingForm() {
             첫 주유 랭킹을 만들 기준을 잡아요
           </h1>
           <p className="mt-4 text-[var(--ink-muted)]">
-            현재 위치와 유종·연비를 한 번만 저장하면 다음부터 바로 순위를 보여줘요.
+            현재 위치 또는 주소 검색과 유종·연비를 한 번만 저장하면 다음부터 바로 순위를 보여줘요.
           </p>
         </header>
 
         <section className="glass rounded-[32px] p-5">
           <h2 className="text-lg font-bold">1. 현재 위치</h2>
           <p className="mt-1 text-sm text-[var(--ink-muted)]">
-            기준 위치는 기기 GPS만 사용해요.
+            기기 GPS를 우선하고, 거절되면 주소나 장소 검색으로 지정할 수 있어요.
           </p>
           {geo.status === "idle" || geo.status === "requesting" ? (
             <p className="mt-3 text-sm text-[var(--brand)]">현재 위치를 확인하고 있어요...</p>
@@ -112,6 +121,12 @@ export function OnboardingForm() {
           >
             위치 새로고침
           </button>
+          {manualOrigin ? (
+            <p className="mt-3 rounded-2xl bg-[rgba(141,249,111,0.12)] p-3 text-sm text-[var(--brand)]">
+              직접 지정: {manualOrigin.label ?? `${manualOrigin.lat}, ${manualOrigin.lng}`}
+            </p>
+          ) : null}
+          <ManualLocation onSelect={setManualOrigin} selected={manualOrigin} />
         </section>
 
         <section className="glass rounded-[32px] p-5">
