@@ -142,10 +142,10 @@ export function RankPage() {
           ) : null}
           <details className="rounded-[28px] border border-[var(--line)] bg-white/[0.04] p-4">
             <summary className="cursor-pointer text-sm font-bold text-[var(--brand)]">
-              주소·좌표로 위치 변경
+              주소로 위치 변경
             </summary>
             <p className="mt-2 text-sm text-[var(--ink-muted)]">
-              GPS를 쓸 수 없거나 다른 기준으로 보고 싶을 때 직접 지정해요.
+              GPS를 쓸 수 없거나 다른 기준으로 보고 싶을 때 주소나 장소를 검색해요.
             </p>
             <ManualLocation
               selected={prefs.lastOrigin}

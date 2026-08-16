@@ -40,7 +40,7 @@ Optional for address search:
   https://developers.kakao.com/
 
 If `KAKAO_REST_API_KEY` is missing, `/api/geocode` returns `503 KAKAO_KEY_MISSING`.
-Lat/lng fallback still works so onboarding and ranking are not blocked.
+Address search then stays unavailable; GPS remains the other origin path.
 
 ## Development
 
@@ -55,7 +55,7 @@ pnpm build
 
 - First visit requires onboarding before ranking.
 - Origin prefers **browser geolocation**. If permission is denied or GPS fails,
-  the user can set a place by Kakao address search or by typing lat/lng.
+  the user can set a place by Kakao address or place search.
 - Preferences are stored only in `localStorage` under `siljuyu.prefs.v1`.
 - Radius is intentionally limited to `3km` or `5km`; Opinet `aroundAll.do`
   accepts a maximum radius of `5000m`.
@@ -76,7 +76,7 @@ Do not create a `NEXT_PUBLIC_` variant for either key.
 ## Smoke checklist
 
 1. Open `/` with no saved prefs and confirm onboarding is required.
-2. Allow geolocation, or deny it and set an origin with address search / lat/lng.
+2. Allow geolocation, or deny it and pick a place from address search.
    Select a vehicle preset, edit efficiency, pick fill liters and `3km` or `5km`.
 3. Confirm `/` shows a ranked list or a clear API/key/empty state.
 4. Change efficiency/fill liters and confirm rank order updates without changing

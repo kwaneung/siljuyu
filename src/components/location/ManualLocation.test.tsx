@@ -17,26 +17,42 @@ async function render(ui: ReactNode) {
 describe("ManualLocation", () => {
   afterEach(() => {
     document.body.innerHTML = "";
+    vi.unstubAllGlobals();
   });
 
-  it("submitting lat/lng enables a usable origin when GPS is unavailable", async () => {
+  it("does not offer raw latitude or longitude fields", async () => {
+    const { container } = await render(<ManualLocation onSelect={vi.fn()} />);
+
+    expect(container.querySelector("#manual-lat")).toBeNull();
+    expect(container.querySelector("#manual-lng")).toBeNull();
+    expect(container.textContent).not.toContain("위도");
+    expect(container.textContent).not.toContain("경도");
+  });
+
+  it("picking a search result sets the origin when GPS is unavailable", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          candidates: [{ label: "서울시청", lat: 37.5665, lng: 126.978 }],
+        }),
+      }),
+    );
+
     const onSelect = vi.fn<(origin: Origin) => void>();
     const { container } = await render(<ManualLocation onSelect={onSelect} />);
 
-    const lat = container.querySelector("#manual-lat");
-    const lng = container.querySelector("#manual-lng");
+    const query = container.querySelector("#manual-query");
     const form = container.querySelector("form");
-    expect(lat).toBeInstanceOf(HTMLInputElement);
-    expect(lng).toBeInstanceOf(HTMLInputElement);
+    expect(query).toBeInstanceOf(HTMLInputElement);
     expect(form).toBeInstanceOf(HTMLFormElement);
 
     await act(async () => {
-      const latInput = lat as HTMLInputElement;
-      const lngInput = lng as HTMLInputElement;
-      latInput.value = "37.5665";
-      latInput.dispatchEvent(new Event("input", { bubbles: true }));
-      lngInput.value = "126.978";
-      lngInput.dispatchEvent(new Event("input", { bubbles: true }));
+      const queryInput = query as HTMLInputElement;
+      queryInput.value = "서울시청";
+      queryInput.dispatchEvent(new Event("input", { bubbles: true }));
     });
 
     await act(async () => {
@@ -45,10 +61,19 @@ describe("ManualLocation", () => {
       );
     });
 
+    const candidate = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent?.includes("서울시청"),
+    );
+    expect(candidate).toBeInstanceOf(HTMLButtonElement);
+
+    await act(async () => {
+      (candidate as HTMLButtonElement).click();
+    });
+
     expect(onSelect).toHaveBeenCalledWith({
       lat: 37.5665,
       lng: 126.978,
-      label: "직접 입력 위치",
+      label: "서울시청",
     });
   });
 });

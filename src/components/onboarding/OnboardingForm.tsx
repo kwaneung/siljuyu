@@ -50,7 +50,7 @@ export function OnboardingForm() {
     });
 
     if (!origin) {
-      setMessage("현재 위치를 허용하거나 주소/좌표를 입력해 주세요.");
+      setMessage("현재 위치를 허용하거나 주소를 검색해 주세요.");
       return;
     }
 
@@ -94,14 +94,14 @@ export function OnboardingForm() {
             첫 주유 랭킹을 만들 기준을 잡아요
           </h1>
           <p className="mt-4 text-[var(--ink-muted)]">
-            현재 위치 또는 주소/좌표와 유종·연비를 한 번만 저장하면 다음부터 바로 순위를 보여줘요.
+            현재 위치 또는 주소 검색과 유종·연비를 한 번만 저장하면 다음부터 바로 순위를 보여줘요.
           </p>
         </header>
 
         <section className="glass rounded-[32px] p-5">
           <h2 className="text-lg font-bold">1. 현재 위치</h2>
           <p className="mt-1 text-sm text-[var(--ink-muted)]">
-            기기 GPS를 우선하고, 거절되면 주소나 좌표로 지정할 수 있어요.
+            기기 GPS를 우선하고, 거절되면 주소나 장소 검색으로 지정할 수 있어요.
           </p>
           {geo.status === "idle" || geo.status === "requesting" ? (
             <p className="mt-3 text-sm text-[var(--brand)]">현재 위치를 확인하고 있어요...</p>
