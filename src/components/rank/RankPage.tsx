@@ -16,6 +16,7 @@ import {
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useStations } from "@/hooks/useStations";
 import { SelectedStationPanel } from "@/components/station/SelectedStationPanel";
+import { ManualLocation } from "@/components/location/ManualLocation";
 
 export function RankPage() {
   const router = useRouter();
@@ -99,11 +100,9 @@ export function RankPage() {
     ? ranked.findIndex((station) => station.id === selected.id) + 1
     : 0;
   const locationLabel =
-    geo.status === "granted"
-      ? "현재 위치"
-      : geo.status === "requesting"
-        ? "위치 확인 중"
-        : (prefs.lastOrigin?.label ?? "저장된 위치");
+    geo.status === "requesting"
+      ? "위치 확인 중"
+      : (prefs.lastOrigin?.label ?? "저장된 위치");
 
   return (
     <main className="app-shell space-y-6">
@@ -130,10 +129,10 @@ export function RankPage() {
           아래에서 고르면 상단에 상세와 길찾기가 열려요.
         </p>
 
-        <div className="mt-4 flex flex-wrap items-center gap-2">
+        <div className="mt-4 flex flex-col gap-2">
           <button
             type="button"
-            className="secondary-cta whitespace-nowrap"
+            className="secondary-cta w-fit whitespace-nowrap"
             onClick={geo.requestLocation}
           >
             현재 위치 새로고침
@@ -141,6 +140,18 @@ export function RankPage() {
           {"message" in geo && geo.message ? (
             <p className="text-sm text-[var(--spark)]">{geo.message}</p>
           ) : null}
+          <details className="rounded-[28px] border border-[var(--line)] bg-white/[0.04] p-4">
+            <summary className="cursor-pointer text-sm font-bold text-[var(--brand)]">
+              주소·좌표로 위치 변경
+            </summary>
+            <p className="mt-2 text-sm text-[var(--ink-muted)]">
+              GPS를 쓸 수 없거나 다른 기준으로 보고 싶을 때 직접 지정해요.
+            </p>
+            <ManualLocation
+              selected={prefs.lastOrigin}
+              onSelect={(origin) => updatePrefs({ lastOrigin: origin })}
+            />
+          </details>
         </div>
 
         <div
